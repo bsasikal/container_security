@@ -167,7 +167,7 @@ data "aws_ami" "jump_host" {
 
   filter {
     name   = "name"
-    values = ["bastion"]
+    values = ["jumphost"]
   }
 }
 
