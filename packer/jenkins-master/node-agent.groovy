@@ -35,15 +35,15 @@ new BasicSSHUserPrivateKey.DirectEntryPrivateKeySource(privateKey),
 githubCredentials = new UsernamePasswordCredentialsImpl(
   CredentialsScope.GLOBAL,
   "github", "Github credentials",
-  "USERNAME",
-  "PASSWORD"
+  "admin",
+  "admin"
 )
 
 registryCredentials = new UsernamePasswordCredentialsImpl(
   CredentialsScope.GLOBAL,
   "registry", "Docker Registry credentials",
-  "USERNAME",
-  "PASSWORD"
+  "admin",
+  "admin"
 )
 
 store.addCredentials(domain, slavesPrivateKey)

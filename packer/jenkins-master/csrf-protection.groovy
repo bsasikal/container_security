@@ -6,5 +6,11 @@ import jenkins.model.Jenkins
 println "--> enabling CSRF protection"
 
 def instance = Jenkins.instance
-instance.setCrumbIssuer(new DefaultCrumbIssuer(true))
+
+//this enables CSRF
+//instance.setCrumbIssuer(new DefaultCrumbIssuer(true))
+
+//this disables CSRF
+instance.setCrumbIssuer(null)
+
 instance.save()

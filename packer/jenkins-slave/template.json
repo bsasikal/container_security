@@ -29,6 +29,16 @@
             "destination" : "/tmp/telegraf.conf"
         },
         {
+            "type" : "file",
+            "source" : "/Users/sasi/.ssh/id_rsa",
+            "destination" : "/tmp/id_rsa"
+        },
+        {
+            "type" : "file",
+            "source" : "/Users/sasi/.ssh/id_rsa.pub",
+            "destination" : "/tmp/id_rsa.pub"
+        },
+        {
             "type" : "shell",
             "script" : "./setup.sh",
             "execute_command" : "sudo -E -S sh '{{ .Path }}'"

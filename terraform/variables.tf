@@ -51,3 +51,32 @@ variable "instance_type" {
   description = "EC2 instance type"
 }
 
+variable "jenkins_master_instance_type" {
+  description = "Jenkins Master instance type"
+  default     = "t2.large"
+}
+
+variable "key_name" {
+  description = "SSH KeyPair"
+  default = "demo"
+}
+
+variable "jenkins_username" {
+  description = "Jenkin login username"
+  default = "admin"
+}
+
+variable "jenkins_password" {
+  description = "Jenkins login password"
+  default = "admin"
+}
+
+variable "jenkins_credentials_id" {
+  description = "Jenkins credentials id"
+  default = "jenkins-slaves"
+}
+
+variable "jenkins_slave_instance_type" {
+  description = "Jenkins Slave instance type"
+  default     = "t2.micro"
+}
