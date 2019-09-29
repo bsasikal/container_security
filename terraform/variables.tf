@@ -76,7 +76,30 @@ variable "jenkins_credentials_id" {
   default = "jenkins-slaves"
 }
 
+// We will be running anchore engine locally on the agents which is CPU and memory heavy
 variable "jenkins_slave_instance_type" {
   description = "Jenkins Slave instance type"
-  default     = "t2.micro"
+  default     = "t2.xlarge"
+}
+
+//SNS
+variable "display_name" {
+  type        = "string"
+  description = "Insight Build Admin"
+  default = "Insight Build Admin"
+}
+variable "email_addresses" {
+  type        = "list"
+  description = "bsasikal2000@gmail.com"
+  default = ["bsasikal2000@gmail.com"]
+}
+variable "protocol" {
+  default     = "email"
+  description = "SNS Protocol to use. email or email-json"
+  type        = "string"
+}
+variable "stack_name" {
+  type        = "string"
+  description = "Scanner Vulnerability"
+  default = "scanner-vulnerability"
 }

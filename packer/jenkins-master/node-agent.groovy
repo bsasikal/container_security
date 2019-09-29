@@ -23,6 +23,9 @@ new BasicSSHUserPrivateKey.DirectEntryPrivateKeySource(privateKey),
 ""
 )
 
+store.addCredentials(domain, slavesPrivateKey)
+
+/*
 managersPrivateKey = new BasicSSHUserPrivateKey(
 CredentialsScope.GLOBAL,
 "swarm-managers",
@@ -46,7 +49,7 @@ registryCredentials = new UsernamePasswordCredentialsImpl(
   "admin"
 )
 
-store.addCredentials(domain, slavesPrivateKey)
 store.addCredentials(domain, managersPrivateKey)
 store.addCredentials(domain, githubCredentials)
 store.addCredentials(domain, registryCredentials)
+*/

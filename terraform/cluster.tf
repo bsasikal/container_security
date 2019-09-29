@@ -72,7 +72,7 @@ resource "aws_eip" "nat" {
 // Nat Gateway
 resource "aws_nat_gateway" "nat" {
   allocation_id = aws_eip.nat.id
-  subnet_id     = aws_subnet.public_subnets.*.id[0]
+  subnet_id     = aws_subnet.public_subnets.0.id
 
   tags = {
     Name   = "nat_${var.vpc_name}"
@@ -189,7 +189,8 @@ resource "aws_autoscaling_group" "jump_host_asg" {
   name = "jump_host_asg_${var.vpc_name}"
   launch_configuration = aws_launch_configuration.jump_host_conf.name
   #vpc_zone_identifier  = ["${aws_subnet.public_subnets.*.id}"]
-  vpc_zone_identifier = [aws_subnet.public_subnets[0].id]
+  #vpc_zone_identifier = [aws_subnet.public_subnets[0].id]
+  vpc_zone_identifier = aws_subnet.public_subnets.*.id
   min_size = 1
   max_size = 1
 
@@ -251,7 +252,9 @@ resource "aws_instance" "jenkins_master" {
   instance_type          = var.jenkins_master_instance_type
   key_name               = var.key_name
   vpc_security_group_ids = [aws_security_group.jenkins_master_sg.id]
-  subnet_id              = aws_subnet.public_subnets[0].id
+  #subnet_id              = aws_subnet.public_subnets[0].id
+  subnet_id              = aws_subnet.public_subnets.0.id
+
 
   root_block_device {
     volume_type           = "gp2"
@@ -275,7 +278,6 @@ resource "aws_instance" "jenkins_master" {
  * Jenkins Slave Configurations starts from here
  * Keep the slaves configurations in a separate file to handle the deployment independent of Master
 */
-
 
 // Jenkins Slave Image
 data "aws_ami" "jenkins-slave" {
@@ -353,7 +355,8 @@ resource "aws_autoscaling_group" "jenkins_slaves" {
   name                 = "jenkins_slaves_asg"
   launch_configuration = aws_launch_configuration.jenkins_slave_launch_conf.name
 
-  vpc_zone_identifier = [aws_subnet.private_subnets[0].id]
+  #vpc_zone_identifier = [aws_subnet.private_subnets[0].id]
+  vpc_zone_identifier = aws_subnet.private_subnets.*.id
   min_size = 2
   max_size = 3
 
@@ -362,5 +365,20 @@ resource "aws_autoscaling_group" "jenkins_slaves" {
   lifecycle {
     create_before_destroy = true
   }
+}
+
+//SNS Email Module
+data "template_file" "cloudformation_sns_stack" {
+  template = "${file("${path.module}/scripts/email-sns-stack.json.tpl")}"
+  vars = {
+          display_name  = "${var.display_name}"
+          subscriptions = "${join("," , formatlist("{ \"Endpoint\": \"%s\", \"Protocol\": \"%s\"  }", var.email_addresses, var.protocol))}"
+  }
+}
+
+resource "aws_cloudformation_stack" "sns_topic" {
+  name          = "${var.stack_name}"
+  template_body = "${data.template_file.cloudformation_sns_stack.rendered}"
+  tags = "${merge(map("Name", "${var.stack_name}"))}"
 
 }

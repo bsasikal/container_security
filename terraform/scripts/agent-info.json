@@ -1,0 +1,43 @@
+{
+   "name":"${AGENT_NAME}",
+   "nodeDescription":"Jenkins Slave Node",
+   "numExecutors":"1",
+   "remoteFS":"/home/ec2-user",
+   "labelString":"jenkins-slaves",
+   "mode":"NORMAL",
+   "":[
+      "hudson.plugins.sshslaves.SSHLauncher",
+      "hudson.slaves.RetentionStrategy$Always"
+   ],
+   "launcher":{
+      "stapler-class":"hudson.plugins.sshslaves.SSHLauncher",
+      "$class":"hudson.plugins.sshslaves.SSHLauncher",
+      "host":"${AGENT_IP}",
+      "includeUser":"false",
+      "credentialsId":"${JENKINS_CREDENTIALS_ID}",
+      "":"0",
+      "sshHostKeyVerificationStrategy":{
+         "stapler-class":"hudson.plugins.sshslaves.verifiers.KnownHostsFileKeyVerificationStrategy",
+         "$class":"hudson.plugins.sshslaves.verifiers.KnownHostsFileKeyVerificationStrategy"
+      },
+      "port":"22",
+      "javaPath":"",
+      "jvmOptions":"",
+      "prefixStartSlaveCmd":"",
+      "suffixStartSlaveCmd":"",
+      "launchTimeoutSeconds":"",
+      "maxNumRetries":"",
+      "retryWaitTime":"",
+      "tcpNoDelay":true,
+      "workDir":""
+   },
+   "retentionStrategy":{
+      "stapler-class":"hudson.slaves.RetentionStrategy$Always",
+      "$class":"hudson.slaves.RetentionStrategy$Always"
+   },
+   "nodeProperties":{
+      "stapler-class-bag":"true"
+   },
+   "type":"hudson.slaves.DumbSlave",
+   "Jenkins-Crumb":"${TOKEN}"
+}

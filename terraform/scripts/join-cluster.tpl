@@ -3,12 +3,18 @@
 # Restart docker
 sudo service docker restart
 
-# Install private registry
+# Install and start docker private registry
 sudo docker run -d -p 5000:5000 --restart=always --name image-registry registry:2
 
-# Install Anchore Engine
+echo "start anchore engine"
+cd /opt/anchore/aevolume
+docker-compose pull
+docker-compose up -d
 
-# export the environment variables for anchore
+# make sure anchore-engine loads the database completely as it is time consuming process
+docker-compose exec engine-api anchore-cli system status
+docker-compose exec engine-api anchore-cli system wait
+docker-compose exec engine-api anchore-cli system feeds list
 
 JENKINS_URL="${jenkins_url}"
 JENKINS_USERNAME="${jenkins_username}"

@@ -1,0 +1,55 @@
+echo "building project"
+VERSION=1.0
+IMAGE=sys-puzzle
+HOST_IP=$(hostname --ip-address)
+PORT=5000
+
+docker build -t $IMAGE:$VERSION .
+docker tag $IMAGE:$VERSION localhost:$PORT/$IMAGE:$VERSION
+echo "pushing docker to registry"
+docker push localhost:$PORT/$IMAGE:$VERSION
+
+cd /opt/anchore/aevolume
+
+echo "feed list from aAnchore-engine"
+docker-compose exec -T engine-api anchore-cli system feeds list
+
+echo "Adding $HOST_IP:$PORT/$IMAGE:$VERSION image to Anchore Engine for scanning"
+docker-compose exec -T engine-api anchore-cli image add $HOST_IP:$PORT/$IMAGE:$VERSION
+
+echo "Waiting for $HOST_IP:$PORT/$IMAGE:$VERSION image to be analyzed"
+docker-compose exec -T engine-api anchore-cli image wait $HOST_IP:$PORT/$IMAGE:$VERSION
+
+#docker-compose exec -T engine-api anchore-cli image content $HOST_IP:$PORT/$IMAGE:$VERSION os
+
+#docker-compose exec -T engine-api anchore-cli image vuln $HOST_IP:$PORT/$IMAGE:$VERSION all
+
+#docker-compose exec -T engine-api anchore-cli evaluate check $HOST_IP:$PORT/$IMAGE:$VERSION
+
+set +e
+
+CHECK_DETAIL=$(docker-compose exec -T engine-api anchore-cli evaluate check $HOST_IP:$PORT/$IMAGE:$VERSION --detail)
+
+milli=$(date +%s%3N)
+
+mkdir -p /tmp/$milli
+
+echo "Output file: /tmp/$milli/scan-result"
+
+echo "$CHECK_DETAIL" > /tmp/$milli/scan-result
+
+set -e
+
+JOB_DETAILS="Scan report for $BUILD_TAG"
+
+MESSAGE="No major vulnerabilities found"
+
+if [[ "$CHECK_DETAIL" == *"Status: fail"* ]]; then
+  MESSAGE="Major vulnerabilities found. Please take a look at the report and fix the packages that are marked vulnerable."
+fi
+
+echo "$JOB_DETAILS: $MESSAGE"
+
+curl -vvv -F file=@/tmp/$milli/scan-result -F channels=devops-automation -H "Authorization: Bearer xoxp-776482176020-765471516723-770529419297-72531e7b72470dc46e6cbab205f1fc65" -F "title=Vulnerability Scan Report" -F "initial_comment=$JOB_DETAILS: $MESSAGE" https://slack.com/api/files.upload
+
+echo "complete"

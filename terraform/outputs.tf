@@ -13,3 +13,8 @@ output "private_subnets" {
 output "jenkins_master_url" {
   value =  "http://${aws_instance.jenkins_master.public_ip}:8080"
 }
+
+output "arn" {
+  value       = "${aws_cloudformation_stack.sns_topic.outputs["ARN"]}"
+  description = "Email SNS topic ARN"
+}
