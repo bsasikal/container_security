@@ -61,6 +61,8 @@ resource "aws_subnet" "private_subnets" {
 // Static IP for Nat Gateway
 resource "aws_eip" "nat" {
   vpc = true
+  //count = "${length(split(",", var.availability_zones))}}"
+  count = 2
 
   tags = {
     Name   = "eip-nat_${var.vpc_name}"
@@ -71,8 +73,9 @@ resource "aws_eip" "nat" {
 
 // Nat Gateway
 resource "aws_nat_gateway" "nat" {
-  allocation_id = aws_eip.nat.id
-  subnet_id     = aws_subnet.public_subnets.0.id
+  allocation_id = aws_eip.nat.*.id[count.index]
+  subnet_id     = aws_subnet.public_subnets.*.id[count.index]
+  count         = var.public_count
 
   tags = {
     Name   = "nat_${var.vpc_name}"
@@ -110,8 +113,9 @@ resource "aws_route_table" "private_rt" {
 
   route {
     cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.nat.id
+    nat_gateway_id = aws_nat_gateway.nat.*.id[count.index]
   }
+  count = var.private_count
 
   tags = {
     Name   = "private_rt_${var.vpc_name}"
@@ -124,7 +128,7 @@ resource "aws_route_table" "private_rt" {
 resource "aws_route_table_association" "private" {
   count          = var.private_count
   subnet_id      = aws_subnet.private_subnets.*.id[count.index]
-  route_table_id = aws_route_table.private_rt.id
+  route_table_id = aws_route_table.private_rt.*.id[count.index]
 }
 
 // Create security group
@@ -210,6 +214,7 @@ data "aws_ami" "jenkins-master" {
   }
 }
 
+/*
 // create security group for Jenkins Master
 resource "aws_security_group" "jenkins_master_sg" {
   name        = "jenkins_master_sg"
@@ -273,11 +278,45 @@ resource "aws_instance" "jenkins_master" {
   }
 
 }
+*/
+
+// above two configurations were commented in favor of below to support routing through ALB
+resource "aws_launch_configuration" "jenkins_master_launch_configuration" {
+  name_prefix     = "jenkins_masters_asg_"
+  image_id        = data.aws_ami.jenkins-master.id
+  instance_type   = var.jenkins_master_instance_type
+  security_groups = [aws_security_group.public_subnet_lb_security_group.id]
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  depends_on = [aws_security_group.public_subnet_lb_security_group]
+}
+
+resource "aws_autoscaling_group" "jenkins_masters_asg" {
+  name_prefix                 = "jenkins_masters_asg_"
+  launch_configuration = aws_launch_configuration.jenkins_master_launch_configuration.name
+  vpc_zone_identifier  = ["${aws_subnet.public_subnets.*.id[count.index]}"]
+  count                = var.public_count
+  min_size             = 1
+  max_size             = 2
+  target_group_arns    = ["${aws_alb_target_group.public_subnet_alb_target_group.id}"]
+
+  depends_on = [aws_launch_configuration.jenkins_master_launch_configuration]
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
 
 /*
  * Jenkins Slave Configurations starts from here
  * Keep the slaves configurations in a separate file to handle the deployment independent of Master
 */
+
+/*
 
 // Jenkins Slave Image
 data "aws_ami" "jenkins-slave" {
@@ -382,3 +421,6 @@ resource "aws_cloudformation_stack" "sns_topic" {
   tags = "${merge(map("Name", "${var.stack_name}"))}"
 
 }
+
+*/
+
