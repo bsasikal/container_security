@@ -295,13 +295,15 @@ resource "aws_launch_configuration" "jenkins_master_launch_configuration" {
 }
 
 resource "aws_autoscaling_group" "jenkins_masters_asg" {
-  name_prefix                 = "jenkins_masters_asg_"
+  name_prefix          = "jenkins_masters_asg_"
   launch_configuration = aws_launch_configuration.jenkins_master_launch_configuration.name
-  vpc_zone_identifier  = ["${aws_subnet.public_subnets.*.id[count.index]}"]
-  count                = var.public_count
-  min_size             = 1
+  //vpc_zone_identifier  = ["${aws_subnet.public_subnets.*.id[count.index]}"]
+  vpc_zone_identifier  = aws_subnet.public_subnets.*.id
+  //count                = var.public_count
+  //count                = 2
+  min_size             = 2
   max_size             = 2
-  target_group_arns    = ["${aws_alb_target_group.public_subnet_alb_target_group.id}"]
+  target_group_arns    = ["${aws_alb_target_group.public_subnet_alb_target_group.id}", "${aws_alb_target_group.public_subnet_alb_tgt_grp_ssh.id}"]
 
   depends_on = [aws_launch_configuration.jenkins_master_launch_configuration]
 
@@ -315,8 +317,6 @@ resource "aws_autoscaling_group" "jenkins_masters_asg" {
  * Jenkins Slave Configurations starts from here
  * Keep the slaves configurations in a separate file to handle the deployment independent of Master
 */
-
-/*
 
 // Jenkins Slave Image
 data "aws_ami" "jenkins-slave" {
@@ -342,7 +342,20 @@ resource "aws_security_group" "jenkins_slaves_sg" {
     //security_groups = ["${aws_security_group.jenkins_master_sg.id}", "${aws_security_group.jump_host.id}"]
     cidr_blocks = ["0.0.0.0/0"]
   }
-
+  ingress {
+    from_port       = "0"
+    to_port         = "0"
+    protocol        = "-1"
+    //security_groups = ["${aws_security_group.jenkins_master_sg.id}", "${aws_security_group.jump_host.id}"]
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress {
+    from_port       = "8080"
+    to_port         = "8080"
+    protocol        = "tcp"
+    //security_groups = ["${aws_security_group.jenkins_master_sg.id}", "${aws_security_group.jump_host.id}"]
+    cidr_blocks = ["0.0.0.0/0"]
+  }
   egress {
     from_port   = "0"
     to_port     = "0"
@@ -362,7 +375,7 @@ data "template_file" "user_data_slave" {
   template = file("scripts/join-cluster.tpl")
 
   vars  = {
-    jenkins_url            = "http://${aws_instance.jenkins_master.public_ip}:8080"
+    jenkins_url            = "http://${aws_alb.public_subnet_alb.dns_name}:80"
     jenkins_username       = var.jenkins_username
     jenkins_password       = var.jenkins_password
     jenkins_credentials_id = var.jenkins_credentials_id
@@ -396,10 +409,10 @@ resource "aws_autoscaling_group" "jenkins_slaves" {
 
   #vpc_zone_identifier = [aws_subnet.private_subnets[0].id]
   vpc_zone_identifier = aws_subnet.private_subnets.*.id
-  min_size = 2
+  min_size = 3
   max_size = 3
 
-  depends_on = ["aws_instance.jenkins_master"]
+  #depends_on = ["aws_instance.jenkins_master"]
 
   lifecycle {
     create_before_destroy = true
@@ -422,5 +435,4 @@ resource "aws_cloudformation_stack" "sns_topic" {
 
 }
 
-*/
 

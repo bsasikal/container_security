@@ -14,14 +14,14 @@ resource "aws_security_group" "public_subnet_lb_security_group" {
   }
 
   ingress {
-    from_port       = "8080"
+    from_port       = "80"
     to_port         = "8080"
     protocol        = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
   ingress {
-    from_port       = "80"
+    from_port       = "8080"
     to_port         = "8080"
     protocol        = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
@@ -44,10 +44,26 @@ resource "aws_security_group" "public_subnet_lb_security_group" {
 }
 
 // create target group
+// for jenkins
 resource "aws_alb_target_group" "public_subnet_alb_target_group" {
   name     = "public-subnet-alb-target-group"
   port     = 8080
   protocol = "HTTP"
+  vpc_id   = aws_vpc.default.id
+
+  stickiness {
+    type = "lb_cookie"
+    enabled = true
+  }
+
+  depends_on = [aws_vpc.default]
+}
+
+// for ssh
+resource "aws_alb_target_group" "public_subnet_alb_tgt_grp_ssh" {
+  name     = "public-subnet-alb-tgt-grp-ssh"
+  port     = 22
+  protocol = "TCP"
   vpc_id   = aws_vpc.default.id
 
   depends_on = [aws_vpc.default]
@@ -61,10 +77,14 @@ resource "aws_alb" "public_subnet_alb" {
   security_groups    = [aws_security_group.public_subnet_lb_security_group.id]
   //subnets            = ["${aws_subnet.public_subnets.*.id[count.index]}"]
   subnets            = aws_subnet.public_subnets.*.id
-  count              = var.public_count
+  //count              = var.public_count
+  //count              = 2
   enable_deletion_protection = false
 
   tags = {
+    Name   = "public_subnet_alb"
+    Author = "sasi"
+    Tool   = "Terraform"
     Environment = "production"
   }
 
@@ -73,13 +93,30 @@ resource "aws_alb" "public_subnet_alb" {
 
 // create listener
 resource "aws_alb_listener" "public_subnet_alb_listener" {
-  load_balancer_arn = aws_alb.public_subnet_alb.*.id[count.index]
+  //load_balancer_arn = aws_alb.public_subnet_alb.*.id[count.index]
+  load_balancer_arn = aws_alb.public_subnet_alb.id
   port              = 80
   protocol          = "HTTP"
-  count             = var.public_count
+  //count             = var.public_count
+  //count             = 2
   default_action {
     target_group_arn = aws_alb_target_group.public_subnet_alb_target_group.id
     type = "forward"
   }
   depends_on = [aws_alb.public_subnet_alb, aws_alb_target_group.public_subnet_alb_target_group]
 }
+
+/*
+resource "aws_alb_listener" "public_subnet_alb_listener_ssh" {
+  load_balancer_arn = aws_alb.public_subnet_alb.*.id[count.index]
+  port              = 22
+  protocol          = "TCP"
+  //count             = var.public_count
+  count             = 1
+  default_action {
+    target_group_arn = aws_alb_target_group.public_subnet_alb_tgt_grp_ssh.id
+    type = "forward"
+  }
+  depends_on = [aws_alb.public_subnet_alb, aws_alb_target_group.public_subnet_alb_tgt_grp_ssh]
+}
+*/

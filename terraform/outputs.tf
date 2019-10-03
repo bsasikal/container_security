@@ -11,12 +11,16 @@ output "private_subnets" {
 }
 
 output "jenkins_master_url" {
-  value =  "http://${aws_alb.public_subnet_alb.0.dns_name}:8080"
+  value =  "http://${aws_alb.public_subnet_alb.dns_name}:80"
 }
 
 /*
+output "jenkins_master_url_1" {
+  value =  "http://${aws_alb.public_subnet_alb.1.dns_name}:80"
+}
+
 output "jenkins_master_url" {
-  value =  "http://${aws_instance.jenkins_master.public_ip}:8080"
+  value =  "http://${aws_instance.jenkins_master.public_ip}:80"
 }
 
 output "arn" {
